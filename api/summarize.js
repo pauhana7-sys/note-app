@@ -10,6 +10,7 @@ const MAX_TEXT = 60000; // 長すぎるページの安全弁（文字数）
 
 const PROMPT = (kind) => `あなたはパチスロ攻略記事の編集アシスタントです。
 これは「${kind}」に関する攻略情報です。
+（画像が複数ある場合は、1つの縦長ページを上から順に分割したものです。全体を通して読んでください。）
 記事づくりに使える要点だけを日本語で簡潔に抽出・要約してください。
 
 重視するのは次の情報です:
@@ -52,9 +53,14 @@ module.exports = async (req, res) => {
     // ---- 入力を1つの content 配列に組み立てる ----
     let content;
     if (mode === "image") {
-      if (!body.image || !body.media_type) { res.status(400).json({ error: "画像がありません" }); return; }
+      // 複数枚（自動分割）にも1枚にも対応
+      const imgs = Array.isArray(body.images) && body.images.length
+        ? body.images
+        : (body.image && body.media_type ? [{ media_type: body.media_type, data: body.image }] : []);
+      if (!imgs.length) { res.status(400).json({ error: "画像がありません" }); return; }
+      if (imgs.length > 20) { res.status(400).json({ error: "分割数が多すぎます（20枚まで）" }); return; }
       content = [
-        { type: "image", source: { type: "base64", media_type: body.media_type, data: body.image } },
+        ...imgs.map((im) => ({ type: "image", source: { type: "base64", media_type: im.media_type, data: im.data } })),
         { type: "text", text: PROMPT(kind) },
       ];
     } else if (mode === "url") {
@@ -86,7 +92,8 @@ module.exports = async (req, res) => {
 
     // ---- キー未設定ならダミー（動作確認用） ----
     if (!apiKey) {
-      res.status(200).json({ summary: `【ダミー要約：APIキー未設定】\n・mode=${mode} / 種別=${kind} を受け取りました。\n・Vercelに ANTHROPIC_API_KEY を設定すると本物のAI要約になります。` });
+      const nImg = content.filter((c) => c.type === "image").length;
+      res.status(200).json({ summary: `【ダミー要約：APIキー未設定】\n・mode=${mode} / 種別=${kind} / 画像${nImg}枚 を受け取りました。\n・Vercelに ANTHROPIC_API_KEY を設定すると本物のAI要約になります。` });
       return;
     }
 
