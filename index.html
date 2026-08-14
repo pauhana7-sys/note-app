@@ -3,199 +3,510 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ナツヤ狙い目サイト｜AI要約（MVP）</title>
+<title>ナツヤ狙い目サイト</title>
 <style>
-  :root{ --bg:#0f1216; --card:#171b21; --line:#2a2f37; --ink:#f2f4f7; --sub:#a7adb7; --accent:#0ca30c; --accent2:#2a78d6; }
+  :root{ --bg:#0f1216; --card:#171b21; --line:#2a2f37; --ink:#f2f4f7; --sub:#a7adb7;
+    --g:#0ca30c; --b:#2a78d6; --y:#eda100; --r:#e34948; }
   *{ box-sizing:border-box; }
   body{ margin:0; background:var(--bg); color:var(--ink);
     font-family:system-ui,-apple-system,"Segoe UI","Hiragino Kaku Gothic ProN","Noto Sans JP",sans-serif; }
-  .wrap{ max-width:760px; margin:0 auto; padding:28px 18px 60px; }
-  h1{ font-size:22px; margin:0 0 4px; }
-  p.sub{ color:var(--sub); font-size:14px; margin:0 0 22px; }
-  .card{ background:var(--card); border:1px solid var(--line); border-radius:14px; padding:20px; margin-bottom:18px; }
-  .label{ font-weight:700; font-size:14px; margin-bottom:10px; }
-  .tabs{ display:flex; gap:8px; margin-bottom:14px; flex-wrap:wrap; }
-  .tab{ background:#0f1216; border:1px solid var(--line); color:var(--sub); border-radius:999px;
-    padding:8px 16px; font-size:13.5px; font-weight:700; cursor:pointer; }
-  .tab.on{ background:#2a78d622; border-color:var(--accent2); color:var(--ink); }
-  .pane{ display:none; } .pane.on{ display:block; }
-  .drop{ border:2px dashed var(--line); border-radius:12px; padding:26px; text-align:center; color:var(--sub); cursor:pointer; }
-  .drop:hover{ border-color:var(--accent2); color:var(--ink); }
-  .drop.hasimg{ padding:12px; }
-  #preview{ max-width:100%; max-height:320px; border-radius:8px; display:none; }
-  input[type=url], textarea, select{ width:100%; background:#0f1216; color:var(--ink);
-    border:1px solid var(--line); border-radius:10px; padding:11px 12px; font:inherit; }
-  textarea{ min-height:170px; resize:vertical; }
-  .row{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-top:14px; }
+  header{ display:flex; align-items:center; gap:14px; padding:12px 18px; border-bottom:1px solid var(--line);
+    position:sticky; top:0; background:var(--bg); z-index:5; flex-wrap:wrap; }
+  header h1{ font-size:17px; margin:0; }
+  .tag{ background:#0ca30c22; color:#5fd35f; border:1px solid #0ca30c55; border-radius:999px; padding:1px 9px; font-size:11px; font-weight:700; }
+  .paneToggles{ margin-left:auto; display:flex; gap:6px; flex-wrap:wrap; }
+  .ptg{ background:#171b21; border:1px solid var(--line); color:var(--sub); border-radius:999px; padding:5px 12px; font-size:12px; font-weight:700; cursor:pointer; }
+  .ptg.on{ border-color:var(--b); color:var(--ink); background:#2a78d61e; }
+  #panes{ display:flex; gap:14px; padding:14px; align-items:flex-start; overflow-x:auto; min-height:calc(100vh - 60px); }
+  .pane{ background:transparent; min-width:300px; flex:1; display:none; }
+  .pane.show{ display:block; }
+  .pane h2{ font-size:14px; margin:2px 0 10px; color:var(--sub); font-weight:800; letter-spacing:.02em; }
+  .card{ background:var(--card); border:1px solid var(--line); border-radius:14px; padding:16px; margin-bottom:14px; }
+  .label{ font-weight:800; font-size:13.5px; margin-bottom:10px; }
+  .mut{ color:var(--sub); font-size:12px; line-height:1.6; }
+  button{ font:inherit; cursor:pointer; }
+  .btn{ background:var(--g); color:#fff; border:0; border-radius:9px; padding:9px 16px; font-weight:800; font-size:13px; }
+  .btn.blue{ background:var(--b); } .btn.gray{ background:#2a2f37; color:var(--sub); }
+  .btn.mini{ padding:5px 10px; font-size:12px; border-radius:7px; }
+  .btn:disabled{ opacity:.5; cursor:default; }
+  input[type=text], input[type=url], textarea, select{ width:100%; background:#0f1216; color:var(--ink);
+    border:1px solid var(--line); border-radius:9px; padding:9px 11px; font:inherit; font-size:13px; }
+  textarea{ resize:vertical; }
+  .tabs{ display:flex; gap:6px; margin-bottom:10px; flex-wrap:wrap; }
+  .tab{ background:#0f1216; border:1px solid var(--line); color:var(--sub); border-radius:999px; padding:6px 13px; font-size:12.5px; font-weight:700; cursor:pointer; }
+  .tab.on{ background:#2a78d622; border-color:var(--b); color:var(--ink); }
+  .paneTab{ display:none; } .paneTab.on{ display:block; }
+  .drop{ border:2px dashed var(--line); border-radius:10px; padding:18px; text-align:center; color:var(--sub); cursor:pointer; font-size:13px; }
+  .drop:hover{ border-color:var(--b); color:var(--ink); }
+  #preview{ max-width:100%; max-height:180px; border-radius:8px; display:none; margin-top:8px; }
+  .row{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-top:10px; }
   .row select{ width:auto; }
-  button.go{ background:var(--accent); color:#fff; border:0; border-radius:10px; padding:11px 22px; font-weight:700; font-size:15px; cursor:pointer; }
-  button.go:disabled{ opacity:.5; cursor:default; }
-  #out{ white-space:pre-wrap; line-height:1.7; font-size:15px; }
-  #out.empty{ color:var(--sub); }
-  .spin{ display:inline-block; width:15px; height:15px; border:2px solid #fff; border-top-color:transparent;
-    border-radius:50%; animation:s .7s linear infinite; vertical-align:-2px; margin-right:8px; }
+  .spin{ display:inline-block; width:13px; height:13px; border:2px solid #fff; border-top-color:transparent; border-radius:50%;
+    animation:s .7s linear infinite; vertical-align:-2px; margin-right:6px; }
   @keyframes s{ to{ transform:rotate(360deg); } }
-  .foot{ color:var(--sub); font-size:12px; margin-top:8px; line-height:1.6; }
-  .tag{ display:inline-block; background:#0ca30c22; color:#5fd35f; border:1px solid #0ca30c55; border-radius:999px;
-    padding:2px 9px; font-size:11px; font-weight:700; margin-left:8px; vertical-align:2px; }
+  /* 記事一覧 */
+  .art{ display:flex; justify-content:space-between; align-items:center; gap:8px; background:#0f1216; border:1px solid var(--line);
+    border-radius:10px; padding:10px 12px; margin-bottom:8px; cursor:pointer; }
+  .art.on{ border-color:var(--b); background:#2a78d612; }
+  .art b{ font-size:13.5px; }
+  .st{ font-size:10.5px; border-radius:999px; padding:2px 8px; font-weight:800; white-space:nowrap; }
+  /* 材料 */
+  details.sum{ background:#0f1216; border:1px solid var(--line); border-radius:10px; padding:8px 12px; margin-bottom:8px; }
+  details.sum summary{ cursor:pointer; font-size:12.5px; font-weight:700; display:flex; justify-content:space-between; gap:6px; align-items:center; }
+  details.sum pre{ white-space:pre-wrap; font:inherit; font-size:12.5px; color:var(--sub); line-height:1.65; margin:8px 0 2px; }
+  .del{ background:none; border:none; color:#7b828e; font-size:12px; }
+  .del:hover{ color:var(--r); }
+  /* 候補 */
+  .cand{ display:flex; gap:8px; align-items:flex-start; background:#0f1216; border:1px solid var(--line); border-radius:10px; padding:9px 11px; margin-bottom:7px; }
+  .pick{ min-width:40px; text-align:center; font-weight:800; border-radius:7px; padding:3px 0; font-size:12px; border:1px solid var(--line); background:#171b21; color:#7b828e; cursor:pointer; }
+  .pick.red{ background:#e3494833; color:#f08a8a; border-color:#e3494866; }
+  .pick.green{ background:#0ca30c33; color:#5fd35f; border-color:#0ca30c66; }
+  .pick.yellow{ background:#eda10033; color:#f2c56b; border-color:#eda10066; }
+  .pick.other{ background:#2a78d633; color:#7fb2ee; border-color:#2a78d666; }
+  .cand .ct{ font-size:12.5px; line-height:1.5; }
+  .cand .ct b{ font-size:13px; }
+  /* 執筆 */
+  .sect{ border-left:3px solid var(--line); padding-left:10px; margin-bottom:16px; }
+  .sect.red{ border-color:var(--r);} .sect.green{ border-color:var(--g);} .sect.yellow{ border-color:var(--y);} .sect.blue{ border-color:var(--b);}
+  .sect h3{ font-size:13.5px; margin:0 0 8px; }
+  .sect textarea{ margin-bottom:8px; }
+  .status{ font-size:12px; color:var(--sub); margin-left:8px; }
+  #finalText{ min-height:420px; font-size:13px; line-height:1.7; }
+  @media (max-width: 900px){ #panes{ flex-direction:column; overflow:visible; } .pane{ min-width:0; width:100%; } }
 </style>
 </head>
 <body>
-<div class="wrap">
-  <h1>ナツヤ狙い目サイト <span class="tag">MVP</span></h1>
-  <p class="sub">URL・テキスト・スクショのどれかを渡すと、AIが狙い目・数値・示唆の要点を要約します。</p>
+<header>
+  <h1>ナツヤ狙い目サイト</h1><span class="tag">FULL</span>
+  <div class="paneToggles">
+    <button class="ptg on" data-p="p1">📚 記事</button>
+    <button class="ptg on" data-p="p2">🧱 材料</button>
+    <button class="ptg on" data-p="p3">✍️ 執筆</button>
+    <button class="ptg on" data-p="p4">📦 原稿</button>
+  </div>
+</header>
 
-  <div class="card">
-    <div class="label">① 材料を渡す</div>
+<div id="panes">
 
-    <div class="tabs">
-      <button class="tab on" data-pane="url">🔗 URL（無料ページ）</button>
-      <button class="tab" data-pane="text">📋 テキスト貼り付け（会員ページ）</button>
-      <button class="tab" data-pane="image">🖼 スクショ</button>
+  <!-- ================= ペイン1：記事一覧 ================= -->
+  <section class="pane show" id="p1" style="max-width:290px">
+    <h2>📚 記事一覧</h2>
+    <div class="card">
+      <div class="row" style="margin-top:0">
+        <input type="text" id="newName" placeholder="機種名（例：戦コレ6）" style="flex:1">
+        <button class="btn mini" id="addArt">＋作成</button>
+      </div>
     </div>
-
-    <div class="pane on" id="pane-url">
-      <input type="url" id="urlIn" placeholder="https://chonborista.com/... など、ログイン不要のページURL">
-      <div class="foot">※すろらぼ等の会員ページはここでは読めません（サーバーはログインしていないため）。会員ページは「テキスト貼り付け」で。</div>
-    </div>
-
-    <div class="pane" id="pane-text">
-      <textarea id="textIn" placeholder="会員ページをログイン済みブラウザで開き、Ctrl+A（全選択）→ Ctrl+C（コピー）して、ここに Ctrl+V で貼り付け"></textarea>
-      <div class="foot">※表も含めてテキストごと貼ってOK。余計な部分はAIが読み飛ばします。</div>
-    </div>
-
-    <div class="pane" id="pane-image">
-      <label class="drop" id="drop">
-        <input type="file" id="file" accept="image/*" hidden>
-        <span id="dropText">ここをクリックして画像を選択（表ごと・セクションごとの普通サイズ推奨）</span>
-        <img id="preview" alt="preview">
-      </label>
-      <div class="foot" id="hint"></div>
-    </div>
-
+    <div id="artList"></div>
+    <div class="mut" style="margin-top:8px">データはこのブラウザに自動保存されます。<br>下のボタンでバックアップも取れます。</div>
     <div class="row">
-      <select id="kind">
-        <option value="狙い目・期待値の表">狙い目・期待値の表</option>
-        <option value="解析・スペック">解析・スペック</option>
-        <option value="示唆・演出">示唆・演出</option>
-        <option value="その他">その他</option>
-      </select>
-      <button class="go" id="go">AIで要約する</button>
+      <button class="btn gray mini" id="exportBtn">⬇ 書き出し</button>
+      <button class="btn gray mini" id="importBtn">⬆ 読み込み</button>
+      <input type="file" id="importFile" accept="application/json" hidden>
     </div>
-  </div>
+  </section>
 
-  <div class="card">
-    <div class="label">② AIの要約</div>
-    <div id="out" class="empty">まだ要約はありません。材料を渡して「AIで要約する」を押してください。</div>
-  </div>
+  <!-- ================= ペイン2：材料と要約 ================= -->
+  <section class="pane show" id="p2">
+    <h2>🧱 STEP1　材料と要約 <span id="curName1" class="status"></span></h2>
+    <div class="card">
+      <div class="tabs">
+        <button class="tab on" data-t="url">🔗 URL</button>
+        <button class="tab" data-t="text">📋 テキスト</button>
+        <button class="tab" data-t="image">🖼 スクショ</button>
+      </div>
+      <div class="paneTab on" id="t-url">
+        <input type="url" id="urlIn" placeholder="https://…（ログイン不要の公開ページ）">
+        <div class="mut" style="margin-top:6px">会員ページは読めません →「テキスト」タブでCtrl+A→C→V。</div>
+      </div>
+      <div class="paneTab" id="t-text">
+        <textarea id="textIn" style="min-height:120px" placeholder="会員ページを全選択コピーして貼り付け"></textarea>
+      </div>
+      <div class="paneTab" id="t-image">
+        <label class="drop" id="drop">
+          <input type="file" id="file" accept="image/*" hidden>
+          <span id="dropText">クリックして画像を選択（縦長は自動分割）</span>
+          <img id="preview">
+        </label>
+        <div class="mut" id="hint" style="margin-top:6px"></div>
+      </div>
+      <div class="row">
+        <input type="text" id="srcLabel" placeholder="材料名（例：解析サイトA）" style="flex:1">
+        <select id="kind">
+          <option>狙い目・期待値の表</option><option>解析・スペック</option><option>示唆・演出</option><option>その他</option>
+        </select>
+        <button class="btn" id="sumBtn">AIで要約する</button>
+      </div>
+      <div class="mut" id="sumStatus" style="margin-top:8px"></div>
+    </div>
+    <div class="card">
+      <div class="label">貯まった要約</div>
+      <div id="sumList"><div class="mut">まだありません。</div></div>
+    </div>
+  </section>
+
+  <!-- ================= ペイン3：執筆 ================= -->
+  <section class="pane show" id="p3">
+    <h2>✍️ STEP2〜4　狙い目と本文 <span id="curName2" class="status"></span></h2>
+
+    <div class="card">
+      <div class="label">STEP2　狙い目候補 → 🔴🟢🟡を決める</div>
+      <button class="btn blue" id="candBtn">貯めた要約からAIが候補を出す</button>
+      <span class="status" id="candStatus"></span>
+      <div id="candList" style="margin-top:10px"></div>
+      <div class="row">
+        <button class="btn gray mini" id="candAdd">＋手動で候補を追加</button>
+      </div>
+      <div class="mut" style="margin-top:6px">候補のマークをクリックで 🔴→🟢→🟡→他→なし と切り替え。</div>
+    </div>
+
+    <div class="card">
+      <div class="label">STEP3　本文執筆</div>
+      <div id="sections"></div>
+    </div>
+
+    <div class="card">
+      <div class="label">STEP4　まとめ・冒頭要約・導入</div>
+      <div id="extras"></div>
+    </div>
+  </section>
+
+  <!-- ================= ペイン4：完成原稿 ================= -->
+  <section class="pane show" id="p4">
+    <h2>📦 完成原稿（noteコピペ用） <span id="curName3" class="status"></span></h2>
+    <div class="card">
+      <div class="row" style="margin-top:0">
+        <button class="btn" id="buildBtn">▶ 組み直して完成原稿を作る</button>
+        <button class="btn blue" id="copyBtn">📋 全文コピー</button>
+        <button class="btn gray" id="copyPlainBtn">📋 太字記号(**)を外してコピー</button>
+      </div>
+      <div class="mut" style="margin:8px 0">並び順：導入 → 有料区切り → 冒頭要約 → 狙い目一覧 → 🔴 → 🟢 → 🟡 → その他 → まとめ。生成後も自由に手直しできます。</div>
+      <textarea id="finalText" placeholder="ここに完成原稿が入ります"></textarea>
+    </div>
+  </section>
+
 </div>
 
 <script>
-let mode = 'url';
-document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => {
-  document.querySelectorAll('.tab').forEach(x => x.classList.remove('on'));
-  document.querySelectorAll('.pane').forEach(x => x.classList.remove('on'));
-  t.classList.add('on');
-  mode = t.dataset.pane;
-  document.getElementById('pane-' + mode).classList.add('on');
-}));
+/* ================= データ ================= */
+const LS = 'nerai_v1';
+let db = load();
+function load(){ try{ return JSON.parse(localStorage.getItem(LS)) || {articles:[], cur:null}; }catch{ return {articles:[], cur:null}; } }
+function save(){ localStorage.setItem(LS, JSON.stringify(db)); }
+function cur(){ return db.articles.find(a=>a.id===db.cur) || null; }
+function uid(){ return Math.random().toString(36).slice(2,9); }
+const STATUSES = ['①材料集め','②狙い目整理','③本文執筆','④組み直し','⑤公開済み'];
+const STC = {'①材料集め':'#8b572a','②狙い目整理':'#a06b00','③本文執筆':'#2a78d6','④組み直し':'#7d5be0','⑤公開済み':'#0ca30c'};
 
-const fileEl = document.getElementById('file');
-const drop = document.getElementById('drop');
-const dropText = document.getElementById('dropText');
-const preview = document.getElementById('preview');
-const hint = document.getElementById('hint');
-let slices = null; // [{media_type, data}] 送信用（縦長は自動分割）
-
-// 縦長スクショを、AIが読みやすい短冊に自動分割する
-//  - 幅は最大1400pxに縮小
-//  - 高さ1500pxごとにスライス（境目の行が切れないよう80px重ねる）
-function sliceImage(img) {
-  const MAX_W = 1400, SLICE_H = 1500, OVERLAP = 80, MAX_SLICES = 20;
-  const ratio = Math.min(1, MAX_W / img.width);
-  const outW = Math.round(img.width * ratio);
-  const outH = Math.round(img.height * ratio);
-  const step = SLICE_H - OVERLAP;
-  const n = Math.max(1, Math.ceil((outH - OVERLAP) / step));
-  if (n > MAX_SLICES) return { error: '画像が長すぎます（分割上限20枚を超過）。ページを分けて撮ってください。' };
-  const out = [];
-  for (let i = 0; i < n; i++) {
-    const yOut = i * step;
-    const hOut = Math.min(SLICE_H, outH - yOut);
-    if (hOut <= 0) break;
-    const cv = document.createElement('canvas');
-    cv.width = outW; cv.height = hOut;
-    const ctx = cv.getContext('2d');
-    // 元画像座標に換算して描画（縮小と切り出しを同時に）
-    ctx.drawImage(img, 0, yOut / ratio, img.width, hOut / ratio, 0, 0, outW, hOut);
-    const durl = cv.toDataURL('image/jpeg', 0.85);
-    out.push({ media_type: 'image/jpeg', data: durl.split(',')[1] });
-  }
-  return { slices: out };
+function newArticle(name){
+  return { id:uid(), name, status:STATUSES[0], materials:[], candidates:[],
+    sections:{ red:{points:'',body:''}, green:{points:'',body:''}, yellow:{points:'',body:''}, other:{points:'',body:''} },
+    extras:{ matome:'', lead:'', intro:'' }, final:'' };
 }
 
-drop.addEventListener('click', () => fileEl.click());
-fileEl.addEventListener('change', () => {
-  const f = fileEl.files[0];
-  if (!f) return;
-  const r = new FileReader();
-  r.onload = () => {
-    const img = new Image();
-    img.onload = () => {
-      const result = sliceImage(img);
-      if (result.error) { hint.textContent = '⚠️ ' + result.error; slices = null; return; }
-      slices = result.slices;
-      preview.src = r.result; preview.style.display = 'block';
-      dropText.style.display = 'none'; drop.classList.add('hasimg');
-      const kb = Math.round(slices.reduce((s, x) => s + x.data.length * 0.75, 0) / 1024);
-      hint.textContent = f.name +
-        (slices.length > 1 ? `　→ 縦長のため自動で${slices.length}分割して送ります（操作は1回でOK）` : '') +
-        `（送信 約${kb} KB）`;
+/* ================= ペイン表示切替 ================= */
+document.querySelectorAll('.ptg').forEach(b=>b.addEventListener('click',()=>{
+  b.classList.toggle('on');
+  document.getElementById(b.dataset.p).classList.toggle('show', b.classList.contains('on'));
+}));
+
+/* ================= 記事一覧 ================= */
+const artList = document.getElementById('artList');
+function renderArts(){
+  artList.innerHTML='';
+  if(!db.articles.length){ artList.innerHTML='<div class="mut">「＋作成」で最初の記事を作りましょう。</div>'; }
+  db.articles.forEach(a=>{
+    const d=document.createElement('div');
+    d.className='art'+(a.id===db.cur?' on':'');
+    const c = STC[a.status]||'#555';
+    d.innerHTML=`<b>${esc(a.name)}</b>
+      <span style="display:flex;gap:6px;align-items:center">
+        <select class="stSel" style="width:auto;font-size:11px;padding:3px 6px;border-radius:999px;background:${c}22;color:${c};border:1px solid ${c}55">
+          ${STATUSES.map(s=>`<option ${s===a.status?'selected':''}>${s}</option>`).join('')}
+        </select>
+        <button class="del" title="削除">✕</button></span>`;
+    d.addEventListener('click',e=>{
+      if(e.target.closest('select')||e.target.closest('.del'))return;
+      db.cur=a.id; save(); renderAll();
+    });
+    d.querySelector('.stSel').addEventListener('change',e=>{ a.status=e.target.value; save(); renderArts(); });
+    d.querySelector('.del').addEventListener('click',()=>{
+      if(!confirm(`「${a.name}」を削除しますか？（元に戻せません）`))return;
+      db.articles=db.articles.filter(x=>x.id!==a.id);
+      if(db.cur===a.id) db.cur=db.articles[0]?.id||null;
+      save(); renderAll();
+    });
+    artList.appendChild(d);
+  });
+}
+document.getElementById('addArt').addEventListener('click',()=>{
+  const n=document.getElementById('newName').value.trim();
+  if(!n)return;
+  const a=newArticle(n); db.articles.unshift(a); db.cur=a.id;
+  document.getElementById('newName').value='';
+  save(); renderAll();
+});
+/* バックアップ */
+document.getElementById('exportBtn').addEventListener('click',()=>{
+  const blob=new Blob([JSON.stringify(db,null,1)],{type:'application/json'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download='nerai-backup.json'; a.click();
+});
+document.getElementById('importBtn').addEventListener('click',()=>document.getElementById('importFile').click());
+document.getElementById('importFile').addEventListener('change',e=>{
+  const f=e.target.files[0]; if(!f)return;
+  const r=new FileReader();
+  r.onload=()=>{ try{ db=JSON.parse(r.result); save(); renderAll(); alert('読み込みました'); }catch{ alert('ファイルが読めませんでした'); } };
+  r.readAsText(f);
+});
+
+/* ================= 共通 ================= */
+function esc(s){ return String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+async function ai(payload){
+  const res=await fetch('/api/summarize',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(payload)});
+  const data=await res.json();
+  if(!res.ok) throw new Error(data.error||('HTTP '+res.status));
+  return data;
+}
+function needArt(){ const a=cur(); if(!a){ alert('先に左の「記事一覧」で記事を選ぶか作成してください。'); return null; } return a; }
+const MARK={red:'🔴',green:'🟢',yellow:'🟡',other:'◆'};
+function pickedList(a){ return a.candidates.filter(c=>c.pick).map(c=>({mark:MARK[c.pick]||'◆',title:c.title,border:c.border,note:c.note,pick:c.pick})); }
+
+/* ================= STEP1 材料 ================= */
+let matMode='url', slices=null;
+document.querySelectorAll('#p2 .tab').forEach(t=>t.addEventListener('click',()=>{
+  document.querySelectorAll('#p2 .tab').forEach(x=>x.classList.remove('on'));
+  document.querySelectorAll('#p2 .paneTab').forEach(x=>x.classList.remove('on'));
+  t.classList.add('on'); matMode=t.dataset.t;
+  document.getElementById('t-'+matMode).classList.add('on');
+}));
+function sliceImage(img){
+  const MAX_W=1400,SLICE_H=1500,OVERLAP=80,MAX_SLICES=20;
+  const ratio=Math.min(1,MAX_W/img.width);
+  const outW=Math.round(img.width*ratio), outH=Math.round(img.height*ratio);
+  const step=SLICE_H-OVERLAP;
+  const n=Math.max(1,Math.ceil((outH-OVERLAP)/step));
+  if(n>MAX_SLICES) return {error:'画像が長すぎます（20分割超）。ページを分けて撮ってください。'};
+  const out=[];
+  for(let i=0;i<n;i++){
+    const yOut=i*step, hOut=Math.min(SLICE_H,outH-yOut);
+    if(hOut<=0)break;
+    const cv=document.createElement('canvas'); cv.width=outW; cv.height=hOut;
+    cv.getContext('2d').drawImage(img,0,yOut/ratio,img.width,hOut/ratio,0,0,outW,hOut);
+    out.push({media_type:'image/jpeg',data:cv.toDataURL('image/jpeg',0.85).split(',')[1]});
+  }
+  return {slices:out};
+}
+const drop=document.getElementById('drop'),fileEl=document.getElementById('file'),
+  dropText=document.getElementById('dropText'),preview=document.getElementById('preview'),hint=document.getElementById('hint');
+drop.addEventListener('click',()=>fileEl.click());
+fileEl.addEventListener('change',()=>{
+  const f=fileEl.files[0]; if(!f)return;
+  const r=new FileReader();
+  r.onload=()=>{
+    const img=new Image();
+    img.onload=()=>{
+      const rs=sliceImage(img);
+      if(rs.error){ hint.textContent='⚠️ '+rs.error; slices=null; return; }
+      slices=rs.slices;
+      preview.src=r.result; preview.style.display='block'; dropText.style.display='none';
+      hint.textContent=f.name+(slices.length>1?`　→ 自動で${slices.length}分割して送ります`:'');
     };
-    img.src = r.result;
+    img.src=r.result;
   };
   r.readAsDataURL(f);
 });
-
-const go = document.getElementById('go');
-const out = document.getElementById('out');
-
-go.addEventListener('click', async () => {
-  const kind = document.getElementById('kind').value;
-  let payload = { mode, kind };
-
-  if (mode === 'url') {
-    const u = document.getElementById('urlIn').value.trim();
-    if (!u) { out.textContent = 'URLを入力してください。'; out.classList.remove('empty'); return; }
-    payload.url = u;
-  } else if (mode === 'text') {
-    const t = document.getElementById('textIn').value.trim();
-    if (t.length < 20) { out.textContent = 'テキストを貼り付けてください。'; out.classList.remove('empty'); return; }
-    payload.text = t;
-  } else {
-    if (!slices || !slices.length) { out.textContent = '画像を選択してください。'; out.classList.remove('empty'); return; }
-    const totalKB = slices.reduce((s, x) => s + x.data.length * 0.75, 0) / 1024;
-    if (totalKB > 3500) { out.textContent = '⚠️ 送信サイズが大きすぎます。ページを分けて撮ってください。'; out.classList.remove('empty'); return; }
-    payload.images = slices;
-  }
-
-  go.disabled = true;
-  out.classList.remove('empty');
-  out.innerHTML = '<span class="spin"></span>要約中…';
-  try {
-    const res = await fetch('/api/summarize', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || ('HTTP ' + res.status));
-    out.textContent = data.summary || '(空の応答)';
-  } catch (e) {
-    out.textContent = '⚠️ エラー: ' + e.message;
-  } finally {
-    go.disabled = false;
-  }
+document.getElementById('sumBtn').addEventListener('click',async()=>{
+  const a=needArt(); if(!a)return;
+  const kind=document.getElementById('kind').value;
+  const label=document.getElementById('srcLabel').value.trim()||'(名称未設定)';
+  const st=document.getElementById('sumStatus');
+  let payload={task:'summarize',mode:matMode,kind};
+  if(matMode==='url'){ const u=document.getElementById('urlIn').value.trim(); if(!u){st.textContent='URLを入力してください';return;} payload.url=u; }
+  else if(matMode==='text'){ const t=document.getElementById('textIn').value.trim(); if(t.length<20){st.textContent='テキストを貼り付けてください';return;} payload.text=t; }
+  else{ if(!slices){st.textContent='画像を選択してください';return;} payload.images=slices; }
+  const btn=document.getElementById('sumBtn'); btn.disabled=true;
+  st.innerHTML='<span class="spin"></span>要約中…（少し時間がかかります）';
+  try{
+    const d=await ai(payload);
+    a.materials.push({id:uid(),label,kind,summary:d.summary,ts:Date.now()});
+    save(); renderMaterials(); st.textContent='✅ 要約を保存しました';
+    document.getElementById('urlIn').value=''; document.getElementById('textIn').value='';
+    slices=null; preview.style.display='none'; dropText.style.display='inline'; hint.textContent='';
+  }catch(e){ st.textContent='⚠️ '+e.message; }
+  finally{ btn.disabled=false; }
 });
+function renderMaterials(){
+  const a=cur(); const box=document.getElementById('sumList');
+  if(!a||!a.materials.length){ box.innerHTML='<div class="mut">まだありません。</div>'; return; }
+  box.innerHTML='';
+  a.materials.forEach(m=>{
+    const d=document.createElement('details'); d.className='sum';
+    d.innerHTML=`<summary><span>📄 ${esc(m.label)} <span class="mut">(${esc(m.kind)})</span></span>
+      <button class="del">✕</button></summary><pre>${esc(m.summary)}</pre>`;
+    d.querySelector('.del').addEventListener('click',e=>{
+      e.preventDefault();
+      if(!confirm('この要約を削除しますか？'))return;
+      a.materials=a.materials.filter(x=>x.id!==m.id); save(); renderMaterials();
+    });
+    box.appendChild(d);
+  });
+}
+
+/* ================= STEP2 候補 ================= */
+document.getElementById('candBtn').addEventListener('click',async()=>{
+  const a=needArt(); if(!a)return;
+  if(!a.materials.length){ alert('先にSTEP1で材料を要約してください。'); return; }
+  const st=document.getElementById('candStatus');
+  st.innerHTML='<span class="spin"></span>候補を考え中…';
+  try{
+    const d=await ai({task:'candidates',machine:a.name,summaries:a.materials.map(m=>m.summary)});
+    if(d.candidates){
+      d.candidates.forEach(c=>a.candidates.push({id:uid(),title:c.title||'',border:c.border||'',note:c.note||'',pick:null}));
+      save(); renderCands(); st.textContent='✅ 候補を追加しました（マークを決めてください）';
+    }else{ st.textContent='⚠️ 形式エラー。もう一度お試しください'; }
+  }catch(e){ st.textContent='⚠️ '+e.message; }
+});
+document.getElementById('candAdd').addEventListener('click',()=>{
+  const a=needArt(); if(!a)return;
+  const t=prompt('候補名（例：優遇状態狙い）'); if(!t)return;
+  const b=prompt('条件・ボーダー（例：0G〜）')||'';
+  a.candidates.push({id:uid(),title:t,border:b,note:'',pick:null}); save(); renderCands();
+});
+const PICKS=[null,'red','green','yellow','other'];
+function renderCands(){
+  const a=cur(); const box=document.getElementById('candList');
+  if(!a||!a.candidates.length){ box.innerHTML='<div class="mut">まだ候補はありません。</div>'; return; }
+  box.innerHTML='';
+  a.candidates.forEach(c=>{
+    const d=document.createElement('div'); d.className='cand';
+    const label=c.pick?{red:'🔴',green:'🟢',yellow:'🟡',other:'他'}[c.pick]:'—';
+    d.innerHTML=`<button class="pick ${c.pick||''}">${label}</button>
+      <div class="ct"><b>${esc(c.title)}</b><br><span class="mut">${esc(c.border)}${c.note?'｜'+esc(c.note):''}</span></div>
+      <button class="del" style="margin-left:auto">✕</button>`;
+    d.querySelector('.pick').addEventListener('click',()=>{
+      const i=PICKS.indexOf(c.pick); c.pick=PICKS[(i+1)%PICKS.length]; save(); renderCands();
+    });
+    d.querySelector('.del').addEventListener('click',()=>{
+      a.candidates=a.candidates.filter(x=>x.id!==c.id); save(); renderCands();
+    });
+    box.appendChild(d);
+  });
+}
+
+/* ================= STEP3 本文 ================= */
+const SECDEF=[
+  {key:'red',cls:'red',name:'🔴 最も伝えたい狙い目'},
+  {key:'green',cls:'green',name:'🟢 2番目に伝えたい狙い目'},
+  {key:'yellow',cls:'yellow',name:'🟡 3番目に伝えたい狙い目'},
+  {key:'other',cls:'blue',name:'◆ その他、網羅的に押さえたい狙い目'},
+];
+function renderSections(){
+  const a=cur(); const box=document.getElementById('sections');
+  if(!a){ box.innerHTML='<div class="mut">記事を選んでください。</div>'; return; }
+  box.innerHTML='';
+  SECDEF.forEach(sd=>{
+    const s=a.sections[sd.key];
+    const picked=a.candidates.filter(c=>c.pick===sd.key);
+    const title=picked.map(c=>c.title).join('／')||'(候補未割り当て)';
+    const d=document.createElement('div'); d.className='sect '+sd.cls;
+    d.innerHTML=`<h3>${sd.name} <span class="mut">${esc(title)}</span></h3>
+      <textarea class="pts" style="min-height:60px" placeholder="強調ポイント・指示（例：例え話は投資で／110%基準で）">${esc(s.points)}</textarea>
+      <div class="row" style="margin:0 0 8px">
+        <button class="btn mini wr">AIが本文を書く</button><span class="status wst"></span>
+      </div>
+      <textarea class="bd" style="min-height:110px" placeholder="ここに本文（生成後も自由に手直し可）">${esc(s.body)}</textarea>`;
+    d.querySelector('.pts').addEventListener('input',e=>{ s.points=e.target.value; save(); });
+    d.querySelector('.bd').addEventListener('input',e=>{ s.body=e.target.value; save(); });
+    d.querySelector('.wr').addEventListener('click',async ev=>{
+      const btn=ev.target,st=d.querySelector('.wst');
+      btn.disabled=true; st.innerHTML='<span class="spin"></span>執筆中…（30秒ほどかかることがあります）';
+      try{
+        const dd=await ai({task:'write',machine:a.name,section:sd.key,
+          sectionTitle:picked.map(c=>`${c.title}（${c.border}）`).join('／'),
+          points:s.points,picked:pickedList(a),summaries:a.materials.map(m=>m.summary)});
+        s.body=dd.body; save(); renderSections();
+      }catch(e){ st.textContent='⚠️ '+e.message; btn.disabled=false; }
+    });
+    box.appendChild(d);
+  });
+}
+
+/* ================= STEP4 ================= */
+const EXDEF=[
+  {key:'matome',name:'🏁 まとめ',hint:'🔴🟢🟡の本文を書いてから'},
+  {key:'lead',name:'📌 有料冒頭の要約',hint:'本文の後に'},
+  {key:'intro',name:'🚪 無料の導入',hint:'最後に逆算で'},
+];
+function renderExtras(){
+  const a=cur(); const box=document.getElementById('extras');
+  if(!a){ box.innerHTML=''; return; }
+  box.innerHTML='';
+  EXDEF.forEach(xd=>{
+    const d=document.createElement('div'); d.className='sect blue';
+    d.innerHTML=`<h3>${xd.name} <span class="mut">${xd.hint}</span></h3>
+      <div class="row" style="margin:0 0 8px"><button class="btn mini gen">生成する</button><span class="status gst"></span></div>
+      <textarea class="bd" style="min-height:90px">${esc(a.extras[xd.key])}</textarea>`;
+    d.querySelector('.bd').addEventListener('input',e=>{ a.extras[xd.key]=e.target.value; save(); });
+    d.querySelector('.gen').addEventListener('click',async ev=>{
+      const btn=ev.target,st=d.querySelector('.gst');
+      btn.disabled=true; st.innerHTML='<span class="spin"></span>生成中…';
+      try{
+        let payload={machine:a.name,picked:pickedList(a)};
+        if(xd.key==='matome') payload={...payload,task:'matome',bodies:{red:a.sections.red.body,green:a.sections.green.body,yellow:a.sections.yellow.body,other:a.sections.other.body}};
+        else if(xd.key==='lead') payload={...payload,task:'lead',bodies:{red:a.sections.red.body,green:a.sections.green.body,yellow:a.sections.yellow.body}};
+        else payload={...payload,task:'intro',matome:a.extras.matome};
+        const dd=await ai(payload);
+        a.extras[xd.key]=dd.body; save(); renderExtras();
+      }catch(e){ st.textContent='⚠️ '+e.message; btn.disabled=false; }
+    });
+    box.appendChild(d);
+  });
+}
+
+/* ================= 完成原稿 ================= */
+document.getElementById('buildBtn').addEventListener('click',()=>{
+  const a=needArt(); if(!a)return;
+  const pk=pickedList(a);
+  const listBlock = pk.length
+    ? '■ 今回紹介する狙い目（一覧）\n\n' + pk.map(c=>`＜${c.mark} ${c.title}＞\n${c.border}${c.note?'\n'+c.note:''}`).join('\n\n')
+    : '';
+  const secTitle={red:'🔴 最も伝えたい狙い目',green:'🟢 2番目に伝えたい狙い目',yellow:'🟡 3番目に伝えたい狙い目',other:'■ その他、網羅的に押さえたい狙い目'};
+  const parts=[
+    a.extras.intro,
+    '────── ここから有料パート ──────',
+    a.extras.lead,
+    listBlock,
+    a.sections.red.body?`${secTitle.red}\n\n${a.sections.red.body}`:'',
+    a.sections.green.body?`${secTitle.green}\n\n${a.sections.green.body}`:'',
+    a.sections.yellow.body?`${secTitle.yellow}\n\n${a.sections.yellow.body}`:'',
+    a.sections.other.body?`${secTitle.other}\n\n${a.sections.other.body}`:'',
+    a.extras.matome?`■ まとめ\n\n${a.extras.matome}`:'',
+  ].filter(Boolean);
+  a.final=parts.join('\n\n\n');
+  save();
+  document.getElementById('finalText').value=a.final;
+});
+document.getElementById('finalText').addEventListener('input',e=>{ const a=cur(); if(a){ a.final=e.target.value; save(); } });
+document.getElementById('copyBtn').addEventListener('click',()=>copyFinal(false));
+document.getElementById('copyPlainBtn').addEventListener('click',()=>copyFinal(true));
+function copyFinal(stripBold){
+  let t=document.getElementById('finalText').value;
+  if(!t){ alert('先に「組み直して完成原稿を作る」を押してください。'); return; }
+  if(stripBold) t=t.replace(/\*\*/g,'');
+  navigator.clipboard.writeText(t).then(()=>alert('コピーしました。noteに貼り付けてください。'));
+}
+
+/* ================= 全体描画 ================= */
+function renderAll(){
+  renderArts(); renderMaterials(); renderCands(); renderSections(); renderExtras();
+  const a=cur();
+  ['curName1','curName2','curName3'].forEach(id=>{
+    document.getElementById(id).textContent=a?('｜'+a.name):'｜記事未選択';
+  });
+  document.getElementById('finalText').value=a?a.final:'';
+}
+renderAll();
 </script>
 </body>
 </html>
