@@ -105,7 +105,34 @@ const drop = document.getElementById('drop');
 const dropText = document.getElementById('dropText');
 const preview = document.getElementById('preview');
 const hint = document.getElementById('hint');
-let dataUrl = null;
+let slices = null; // [{media_type, data}] 送信用（縦長は自動分割）
+
+// 縦長スクショを、AIが読みやすい短冊に自動分割する
+//  - 幅は最大1400pxに縮小
+//  - 高さ1500pxごとにスライス（境目の行が切れないよう80px重ねる）
+function sliceImage(img) {
+  const MAX_W = 1400, SLICE_H = 1500, OVERLAP = 80, MAX_SLICES = 20;
+  const ratio = Math.min(1, MAX_W / img.width);
+  const outW = Math.round(img.width * ratio);
+  const outH = Math.round(img.height * ratio);
+  const step = SLICE_H - OVERLAP;
+  const n = Math.max(1, Math.ceil((outH - OVERLAP) / step));
+  if (n > MAX_SLICES) return { error: '画像が長すぎます（分割上限20枚を超過）。ページを分けて撮ってください。' };
+  const out = [];
+  for (let i = 0; i < n; i++) {
+    const yOut = i * step;
+    const hOut = Math.min(SLICE_H, outH - yOut);
+    if (hOut <= 0) break;
+    const cv = document.createElement('canvas');
+    cv.width = outW; cv.height = hOut;
+    const ctx = cv.getContext('2d');
+    // 元画像座標に換算して描画（縮小と切り出しを同時に）
+    ctx.drawImage(img, 0, yOut / ratio, img.width, hOut / ratio, 0, 0, outW, hOut);
+    const durl = cv.toDataURL('image/jpeg', 0.85);
+    out.push({ media_type: 'image/jpeg', data: durl.split(',')[1] });
+  }
+  return { slices: out };
+}
 
 drop.addEventListener('click', () => fileEl.click());
 fileEl.addEventListener('change', () => {
@@ -113,10 +140,19 @@ fileEl.addEventListener('change', () => {
   if (!f) return;
   const r = new FileReader();
   r.onload = () => {
-    dataUrl = r.result;
-    preview.src = dataUrl; preview.style.display = 'block';
-    dropText.style.display = 'none'; drop.classList.add('hasimg');
-    hint.textContent = f.name + '（' + Math.round(f.size/1024) + ' KB）';
+    const img = new Image();
+    img.onload = () => {
+      const result = sliceImage(img);
+      if (result.error) { hint.textContent = '⚠️ ' + result.error; slices = null; return; }
+      slices = result.slices;
+      preview.src = r.result; preview.style.display = 'block';
+      dropText.style.display = 'none'; drop.classList.add('hasimg');
+      const kb = Math.round(slices.reduce((s, x) => s + x.data.length * 0.75, 0) / 1024);
+      hint.textContent = f.name +
+        (slices.length > 1 ? `　→ 縦長のため自動で${slices.length}分割して送ります（操作は1回でOK）` : '') +
+        `（送信 約${kb} KB）`;
+    };
+    img.src = r.result;
   };
   r.readAsDataURL(f);
 });
@@ -137,10 +173,10 @@ go.addEventListener('click', async () => {
     if (t.length < 20) { out.textContent = 'テキストを貼り付けてください。'; out.classList.remove('empty'); return; }
     payload.text = t;
   } else {
-    if (!dataUrl) { out.textContent = '画像を選択してください。'; out.classList.remove('empty'); return; }
-    const m = dataUrl.match(/^data:(.*?);base64,(.*)$/);
-    if (!m) { out.textContent = '画像の読み込みに失敗しました。'; return; }
-    payload.media_type = m[1]; payload.image = m[2];
+    if (!slices || !slices.length) { out.textContent = '画像を選択してください。'; out.classList.remove('empty'); return; }
+    const totalKB = slices.reduce((s, x) => s + x.data.length * 0.75, 0) / 1024;
+    if (totalKB > 3500) { out.textContent = '⚠️ 送信サイズが大きすぎます。ページを分けて撮ってください。'; out.classList.remove('empty'); return; }
+    payload.images = slices;
   }
 
   go.disabled = true;
