@@ -14,22 +14,28 @@
   p.sub{ color:var(--sub); font-size:14px; margin:0 0 22px; }
   .card{ background:var(--card); border:1px solid var(--line); border-radius:14px; padding:20px; margin-bottom:18px; }
   .label{ font-weight:700; font-size:14px; margin-bottom:10px; }
-  .drop{ border:2px dashed var(--line); border-radius:12px; padding:26px; text-align:center; color:var(--sub);
-    cursor:pointer; transition:.15s; }
+  .tabs{ display:flex; gap:8px; margin-bottom:14px; flex-wrap:wrap; }
+  .tab{ background:#0f1216; border:1px solid var(--line); color:var(--sub); border-radius:999px;
+    padding:8px 16px; font-size:13.5px; font-weight:700; cursor:pointer; }
+  .tab.on{ background:#2a78d622; border-color:var(--accent2); color:var(--ink); }
+  .pane{ display:none; } .pane.on{ display:block; }
+  .drop{ border:2px dashed var(--line); border-radius:12px; padding:26px; text-align:center; color:var(--sub); cursor:pointer; }
   .drop:hover{ border-color:var(--accent2); color:var(--ink); }
   .drop.hasimg{ padding:12px; }
-  #preview{ max-width:100%; max-height:340px; border-radius:8px; display:none; }
-  select, button{ font:inherit; }
+  #preview{ max-width:100%; max-height:320px; border-radius:8px; display:none; }
+  input[type=url], textarea, select{ width:100%; background:#0f1216; color:var(--ink);
+    border:1px solid var(--line); border-radius:10px; padding:11px 12px; font:inherit; }
+  textarea{ min-height:170px; resize:vertical; }
   .row{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-top:14px; }
-  select{ background:#0f1216; color:var(--ink); border:1px solid var(--line); border-radius:8px; padding:9px 10px; }
-  button{ background:var(--accent); color:#fff; border:0; border-radius:10px; padding:11px 20px; font-weight:700; cursor:pointer; }
-  button:disabled{ opacity:.5; cursor:default; }
+  .row select{ width:auto; }
+  button.go{ background:var(--accent); color:#fff; border:0; border-radius:10px; padding:11px 22px; font-weight:700; font-size:15px; cursor:pointer; }
+  button.go:disabled{ opacity:.5; cursor:default; }
   #out{ white-space:pre-wrap; line-height:1.7; font-size:15px; }
   #out.empty{ color:var(--sub); }
   .spin{ display:inline-block; width:15px; height:15px; border:2px solid #fff; border-top-color:transparent;
     border-radius:50%; animation:s .7s linear infinite; vertical-align:-2px; margin-right:8px; }
   @keyframes s{ to{ transform:rotate(360deg); } }
-  .foot{ color:var(--sub); font-size:12px; margin-top:8px; }
+  .foot{ color:var(--sub); font-size:12px; margin-top:8px; line-height:1.6; }
   .tag{ display:inline-block; background:#0ca30c22; color:#5fd35f; border:1px solid #0ca30c55; border-radius:999px;
     padding:2px 9px; font-size:11px; font-weight:700; margin-left:8px; vertical-align:2px; }
 </style>
@@ -37,15 +43,36 @@
 <body>
 <div class="wrap">
   <h1>ナツヤ狙い目サイト <span class="tag">MVP</span></h1>
-  <p class="sub">攻略スクショをアップすると、AIが狙い目・数値・示唆の要点を抜き出して要約します。</p>
+  <p class="sub">URL・テキスト・スクショのどれかを渡すと、AIが狙い目・数値・示唆の要点を要約します。</p>
 
   <div class="card">
-    <div class="label">① 攻略スクショを選ぶ</div>
-    <label class="drop" id="drop">
-      <input type="file" id="file" accept="image/*" hidden>
-      <span id="dropText">ここをクリックして画像を選択（すろらぼ / genpachi 等のスクショ）</span>
-      <img id="preview" alt="preview">
-    </label>
+    <div class="label">① 材料を渡す</div>
+
+    <div class="tabs">
+      <button class="tab on" data-pane="url">🔗 URL（無料ページ）</button>
+      <button class="tab" data-pane="text">📋 テキスト貼り付け（会員ページ）</button>
+      <button class="tab" data-pane="image">🖼 スクショ</button>
+    </div>
+
+    <div class="pane on" id="pane-url">
+      <input type="url" id="urlIn" placeholder="https://chonborista.com/... など、ログイン不要のページURL">
+      <div class="foot">※すろらぼ等の会員ページはここでは読めません（サーバーはログインしていないため）。会員ページは「テキスト貼り付け」で。</div>
+    </div>
+
+    <div class="pane" id="pane-text">
+      <textarea id="textIn" placeholder="会員ページをログイン済みブラウザで開き、Ctrl+A（全選択）→ Ctrl+C（コピー）して、ここに Ctrl+V で貼り付け"></textarea>
+      <div class="foot">※表も含めてテキストごと貼ってOK。余計な部分はAIが読み飛ばします。</div>
+    </div>
+
+    <div class="pane" id="pane-image">
+      <label class="drop" id="drop">
+        <input type="file" id="file" accept="image/*" hidden>
+        <span id="dropText">ここをクリックして画像を選択（表ごと・セクションごとの普通サイズ推奨）</span>
+        <img id="preview" alt="preview">
+      </label>
+      <div class="foot" id="hint"></div>
+    </div>
+
     <div class="row">
       <select id="kind">
         <option value="狙い目・期待値の表">狙い目・期待値の表</option>
@@ -53,61 +80,83 @@
         <option value="示唆・演出">示唆・演出</option>
         <option value="その他">その他</option>
       </select>
-      <button id="go" disabled>AIで要約する</button>
+      <button class="go" id="go">AIで要約する</button>
     </div>
-    <div class="foot" id="hint"></div>
   </div>
 
   <div class="card">
     <div class="label">② AIの要約</div>
-    <div id="out" class="empty">まだ要約はありません。画像を選んで「AIで要約する」を押してください。</div>
+    <div id="out" class="empty">まだ要約はありません。材料を渡して「AIで要約する」を押してください。</div>
   </div>
 </div>
 
 <script>
+let mode = 'url';
+document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => {
+  document.querySelectorAll('.tab').forEach(x => x.classList.remove('on'));
+  document.querySelectorAll('.pane').forEach(x => x.classList.remove('on'));
+  t.classList.add('on');
+  mode = t.dataset.pane;
+  document.getElementById('pane-' + mode).classList.add('on');
+}));
+
 const fileEl = document.getElementById('file');
 const drop = document.getElementById('drop');
 const dropText = document.getElementById('dropText');
 const preview = document.getElementById('preview');
-const go = document.getElementById('go');
-const out = document.getElementById('out');
 const hint = document.getElementById('hint');
-const kind = document.getElementById('kind');
 let dataUrl = null;
 
-drop.addEventListener('click', ()=> fileEl.click());
-fileEl.addEventListener('change', ()=>{
+drop.addEventListener('click', () => fileEl.click());
+fileEl.addEventListener('change', () => {
   const f = fileEl.files[0];
-  if(!f) return;
+  if (!f) return;
   const r = new FileReader();
-  r.onload = ()=>{
+  r.onload = () => {
     dataUrl = r.result;
-    preview.src = dataUrl; preview.style.display='block';
-    dropText.style.display='none'; drop.classList.add('hasimg');
-    go.disabled = false;
+    preview.src = dataUrl; preview.style.display = 'block';
+    dropText.style.display = 'none'; drop.classList.add('hasimg');
     hint.textContent = f.name + '（' + Math.round(f.size/1024) + ' KB）';
   };
   r.readAsDataURL(f);
 });
 
-go.addEventListener('click', async ()=>{
-  if(!dataUrl) return;
-  const m = dataUrl.match(/^data:(.*?);base64,(.*)$/);
-  if(!m){ out.textContent='画像の読み込みに失敗しました。'; return; }
+const go = document.getElementById('go');
+const out = document.getElementById('out');
+
+go.addEventListener('click', async () => {
+  const kind = document.getElementById('kind').value;
+  let payload = { mode, kind };
+
+  if (mode === 'url') {
+    const u = document.getElementById('urlIn').value.trim();
+    if (!u) { out.textContent = 'URLを入力してください。'; out.classList.remove('empty'); return; }
+    payload.url = u;
+  } else if (mode === 'text') {
+    const t = document.getElementById('textIn').value.trim();
+    if (t.length < 20) { out.textContent = 'テキストを貼り付けてください。'; out.classList.remove('empty'); return; }
+    payload.text = t;
+  } else {
+    if (!dataUrl) { out.textContent = '画像を選択してください。'; out.classList.remove('empty'); return; }
+    const m = dataUrl.match(/^data:(.*?);base64,(.*)$/);
+    if (!m) { out.textContent = '画像の読み込みに失敗しました。'; return; }
+    payload.media_type = m[1]; payload.image = m[2];
+  }
+
   go.disabled = true;
   out.classList.remove('empty');
   out.innerHTML = '<span class="spin"></span>要約中…';
-  try{
+  try {
     const res = await fetch('/api/summarize', {
-      method:'POST', headers:{'content-type':'application/json'},
-      body: JSON.stringify({ media_type:m[1], image:m[2], kind:kind.value })
+      method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(payload)
     });
     const data = await res.json();
-    if(!res.ok){ throw new Error(data.error || ('HTTP '+res.status)); }
+    if (!res.ok) throw new Error(data.error || ('HTTP ' + res.status));
     out.textContent = data.summary || '(空の応答)';
-  }catch(e){
+  } catch (e) {
     out.textContent = '⚠️ エラー: ' + e.message;
-  }finally{
+  } finally {
     go.disabled = false;
   }
 });
